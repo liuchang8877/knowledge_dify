@@ -41,7 +41,6 @@ default_retrieval_model = {
     "score_threshold_enabled": False,
 }
 
-
 class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
     _node_data_cls = KnowledgeRetrievalNodeData
     _node_type = NodeType.KNOWLEDGE_RETRIEVAL
@@ -57,13 +56,25 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
             )
         query = variable.value
         variables = {"query": query}
+
+        # Extract knowledge_id from inputs (if provided)
+        knowledge_id_variable = self.graph_runtime_state.variable_pool.get(["input", "knowledge_id"])
+        knowledge_id = (
+            knowledge_id_variable.value 
+            if knowledge_id_variable and isinstance(knowledge_id_variable, StringSegment) 
+            else None
+        )
+        if knowledge_id:
+            variables["knowledge_id"] = knowledge_id
+
         if not query:
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.FAILED, inputs=variables, error="Query is required."
             )
+
         # retrieve knowledge
         try:
-            results = self._fetch_dataset_retriever(node_data=self.node_data, query=query)
+            results = self._fetch_dataset_retriever(node_data=self.node_data, query=query, knowledge_id=knowledge_id)
             outputs = {"result": results}
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.SUCCEEDED, inputs=variables, process_data=None, outputs=outputs
@@ -86,9 +97,12 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
                 error_type=type(e).__name__,
             )
 
-    def _fetch_dataset_retriever(self, node_data: KnowledgeRetrievalNodeData, query: str) -> list[dict[str, Any]]:
+    def _fetch_dataset_retriever(
+        self, node_data: KnowledgeRetrievalNodeData, query: str, knowledge_id: str | None = None
+    ) -> list[dict[str, Any]]:
         available_datasets = []
-        dataset_ids = node_data.dataset_ids
+        # Use dynamic knowledge_id if provided, otherwise fall back to node_data.dataset_ids
+        dataset_ids = [knowledge_id] if knowledge_id else node_data.dataset_ids
 
         # Subquery: Count the number of available documents for each dataset
         subquery = (
@@ -275,6 +289,8 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         """
         variable_mapping = {}
         variable_mapping[node_id + ".query"] = node_data.query_variable_selector
+        # Add mapping for knowledge_id to allow dynamic input from API
+        variable_mapping[node_id + ".knowledge_id"] = ["input", "knowledge_id"]
         return variable_mapping
 
     def _fetch_model_config(
