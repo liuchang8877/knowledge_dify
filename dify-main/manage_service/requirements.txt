@@ -1,5 +1,7 @@
+flask==2.0.1
+werkzeug==2.0.1
+requests==2.31.0
 fastapi==0.103.1
 uvicorn==0.23.2
-sqlite3
-aiohttp==3.8.5
 pydantic==1.10.12
+python-multipart==0.0.6

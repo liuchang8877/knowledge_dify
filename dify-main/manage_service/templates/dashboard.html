@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表板 - 知识管理系统</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background-color: #2196F3;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .user-info span {
+            margin-right: 15px;
+        }
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .logout-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .upload-form {
+            margin-top: 20px;
+        }
+        .file-input {
+            margin-bottom: 15px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .query-form {
+            margin-top: 20px;
+        }
+        .query-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .response-area {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>知识管理系统</h1>
+        <div class="user-info">
+            <span>欢迎，{{ username }}</span>
+            <form action="/logout" method="post" style="display: inline;">
+                <button type="submit" class="logout-btn">退出登录</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>上传文档</h2>
+            <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+                <div class="file-input">
+                    <input type="file" name="file" required>
+                </div>
+                <button type="submit" class="submit-btn">上传文档</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>查询知识库</h2>
+            <form class="query-form" id="queryForm">
+                <input type="text" class="query-input" id="queryInput" placeholder="输入您的问题..." required>
+                <button type="submit" class="submit-btn">查询</button>
+            </form>
+            <div class="response-area" id="responseArea">
+                <p>查询结果将显示在这里...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('queryInput').value;
+            const responseArea = document.getElementById('responseArea');
+            
+            responseArea.innerHTML = '<p>正在查询，请稍候...</p>';
+            
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'query': query
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.answer) {
+                    responseArea.innerHTML = `<p><strong>回答:</strong> ${data.answer}</p>`;
+                } else {
+                    responseArea.innerHTML = `<p>查询结果: ${JSON.stringify(data)}</p>`;
+                }
+            })
+            .catch(error => {
+                responseArea.innerHTML = `<p>查询出错: ${error}</p>`;
+            });
+        });
+    </script>
+</body>
+</html> 
