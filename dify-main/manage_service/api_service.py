@@ -93,11 +93,25 @@ def create_knowledge_base(username):
         "description": f"Knowledge base for user {username}"
     }
     try:
+        print(f"Creating knowledge base for {username}")
+        print(f"DIFY_API_URL: {DIFY_API_URL}")
+        print(f"DIFY_API_KEY: {DIFY_API_KEY}")
+        print(f"Payload: {payload}")
+        
         response = requests.post(f"{DIFY_API_URL}/datasets", json=payload, headers=headers)
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.text}")
+        
         if response.status_code != 200:
             print(f"Error creating knowledge base: {response.text}")
             return None
+        
         result = response.json()
+        if "id" not in result:
+            print(f"No id in response: {result}")
+            return None
+            
+        print(f"Successfully created knowledge base with ID: {result['id']}")
         return result["id"]  # 返回 dataset_id 作为 knowledge_id
     except Exception as e:
         print(f"Exception creating knowledge base: {str(e)}")
@@ -602,6 +616,17 @@ async def debug():
     }
     
     return debug_info
+
+@app.get("/test-create-kb/{username}")
+async def test_create_kb(username: str):
+    """测试创建知识库功能"""
+    knowledge_id = create_knowledge_base(username)
+    return {
+        "username": username,
+        "knowledge_id": knowledge_id,
+        "dify_api_url": DIFY_API_URL,
+        "dify_api_key": DIFY_API_KEY[:5] + "..." if DIFY_API_KEY else None
+    }
 
 if __name__ == "__main__":
     import uvicorn

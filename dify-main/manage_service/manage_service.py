@@ -17,7 +17,7 @@ PORT = int(os.environ.get('PORT', 8000))
 DB_PATH = os.environ.get('DB_PATH', 'users.db')  # 修改为直接使用根目录下的users.db
 
 # Dify API 配置
-DIFY_API_URL = os.environ.get('DIFY_API_URL', "http://api:5001/v1")
+DIFY_API_URL = os.environ.get('DIFY_API_URL', "http://localhost/v1")
 DIFY_API_KEY = os.environ.get('DIFY_API_KEY', "dataset-KBWgoCcrXkGwvQSpxmmnhodn")
 
 # SQLite 数据库初始化

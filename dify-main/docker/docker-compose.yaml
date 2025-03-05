@@ -962,7 +962,7 @@ services:
       - api
     environment:
       - DIFY_API_URL=http://api:5001/v1
-      - DIFY_API_KEY=your-dify-api-key
+      - DIFY_API_KEY=dataset-KBWgoCcrXkGwvQSpxmmnhodn
       - HOST=0.0.0.0
       - PORT=8000
       - DB_PATH=/app/users.db
@@ -978,7 +978,7 @@ services:
         python -m uvicorn api_service:app --host 0.0.0.0 --port 8000
       "
     networks:
-      - dify-network
+      - default
     restart: always
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8000/test"]
