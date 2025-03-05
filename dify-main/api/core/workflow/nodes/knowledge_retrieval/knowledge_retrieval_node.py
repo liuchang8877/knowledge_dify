@@ -64,6 +64,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
             if knowledge_id_variable and isinstance(knowledge_id_variable, StringSegment) 
             else None
         )
+        logger.info(f"Extracted knowledge_id: {knowledge_id}")  # 添加调试日志
         if knowledge_id:
             variables["knowledge_id"] = knowledge_id
 
@@ -75,6 +76,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         # retrieve knowledge
         try:
             results = self._fetch_dataset_retriever(node_data=self.node_data, query=query, knowledge_id=knowledge_id)
+            logger.info(f"Retrieved results for knowledge_id: {knowledge_id}")  # 添加调试日志
             outputs = {"result": results}
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.SUCCEEDED, inputs=variables, process_data=None, outputs=outputs
@@ -103,7 +105,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         available_datasets = []
         # Use dynamic knowledge_id if provided, otherwise fall back to node_data.dataset_ids
         dataset_ids = [knowledge_id] if knowledge_id else node_data.dataset_ids
-
+        logger.info(f"Using dataset_ids: {dataset_ids}")  # 添加调试日志
         # Subquery: Count the number of available documents for each dataset
         subquery = (
             db.session.query(Document.dataset_id, func.count(Document.id).label("available_document_count"))
