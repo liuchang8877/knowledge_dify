@@ -46,7 +46,10 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
     _node_type = NodeType.KNOWLEDGE_RETRIEVAL
 
     def _run(self) -> NodeRunResult:
-        # extract variables
+        # Log the full variable pool for debugging
+        logger.info(f"Full variable pool: {self.graph_runtime_state.variable_pool}")
+
+        # Extract query
         variable = self.graph_runtime_state.variable_pool.get(self.node_data.query_variable_selector)
         if not isinstance(variable, StringSegment):
             return NodeRunResult(
@@ -67,17 +70,17 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         )
         logger.info(f"Extracted knowledge_id from inputs: {knowledge_id}")
 
-        # Optional: Fallback to node_data.dataset_ids[0] if no knowledge_id provided
-        # Uncomment the following block if you want a fallback behavior
-        # if not knowledge_id and len(self.node_data.dataset_ids) > 0:
-        #     knowledge_id = self.node_data.dataset_ids[0]
-        #     logger.info(f"No knowledge_id in inputs, falling back to node_data.dataset_ids[0]: {knowledge_id}")
-        #     variables["knowledge_id"] = knowledge_id
-
+        # Assign knowledge_id to variables if provided
         if knowledge_id:
             variables["knowledge_id"] = knowledge_id
         else:
             logger.warning("No knowledge_id provided in inputs, proceeding with default behavior")
+            # Optional: Uncomment the following to fail if knowledge_id is required
+            # return NodeRunResult(
+            #     status=WorkflowNodeExecutionStatus.FAILED,
+            #     inputs=variables,
+            #     error="knowledge_id is required in inputs"
+            # )
 
         logger.info(f"Final assigned knowledge_id in _run: {knowledge_id}")
 
@@ -86,7 +89,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
                 status=WorkflowNodeExecutionStatus.FAILED, inputs=variables, error="Query is required."
             )
 
-        # retrieve knowledge
+        # Retrieve knowledge
         try:
             results = self._fetch_dataset_retriever(node_data=self.node_data, query=query, knowledge_id=knowledge_id)
             logger.info(f"Retrieved results for knowledge_id: {knowledge_id}")
@@ -143,19 +146,19 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         )
 
         for dataset in results:
-            # pass if dataset is not available
+            # Pass if dataset is not available
             if not dataset:
                 continue
             available_datasets.append(dataset)
         all_documents = []
         dataset_retrieval = DatasetRetrieval()
         if node_data.retrieval_mode == DatasetRetrieveConfigEntity.RetrieveStrategy.SINGLE.value:
-            # fetch model config
+            # Fetch model config
             model_instance, model_config = self._fetch_model_config(node_data)
-            # check model is support tool calling
+            # Check model is support tool calling
             model_type_instance = model_config.provider_model_bundle.model_type_instance
             model_type_instance = cast(LargeLanguageModel, model_type_instance)
-            # get model schema
+            # Get model schema
             model_schema = model_type_instance.get_model_schema(
                 model=model_config.model, credentials=model_config.credentials
             )
@@ -226,7 +229,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         dify_documents = [item for item in all_documents if item.provider == "dify"]
         external_documents = [item for item in all_documents if item.provider == "external"]
         retrieval_resource_list = []
-        # deal with external documents
+        # Deal with external documents
         for item in external_documents:
             source = {
                 "metadata": {
@@ -242,7 +245,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
                 "content": item.page_content,
             }
             retrieval_resource_list.append(source)
-        # deal with dify documents
+        # Deal with dify documents
         if dify_documents:
             records = RetrievalService.format_retrieval_documents(dify_documents)
             if records:
@@ -333,7 +336,7 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
 
         model_credentials = model_instance.credentials
 
-        # check model
+        # Check model
         provider_model = provider_model_bundle.configuration.get_provider_model(
             model=model_name, model_type=ModelType.LLM
         )
@@ -348,14 +351,14 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         elif provider_model.status == ModelStatus.QUOTA_EXCEEDED:
             raise ModelQuotaExceededError(f"Model provider {provider_name} quota exceeded.")
 
-        # model config
+        # Model config
         completion_params = node_data.single_retrieval_config.model.completion_params
         stop = []
         if "stop" in completion_params:
             stop = completion_params["stop"]
             del completion_params["stop"]
 
-        # get model mode
+        # Get model mode
         model_mode = node_data.single_retrieval_config.model.mode
         if not model_mode:
             raise ModelNotExistError("LLM mode is required.")
