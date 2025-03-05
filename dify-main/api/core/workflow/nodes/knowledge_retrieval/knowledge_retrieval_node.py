@@ -61,26 +61,32 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         variables = {"query": query}
         logger.info(f"Query extracted: {query}")
 
-        # Extract knowledge_id from inputs (Scheme 1)
-        knowledge_id_variable = self.graph_runtime_state.variable_pool.get(["input", "knowledge_id"])
-        knowledge_id = (
-            knowledge_id_variable.value 
-            if knowledge_id_variable and isinstance(knowledge_id_variable, StringSegment) 
-            else None
-        )
-        logger.info(f"Extracted knowledge_id from inputs: {knowledge_id}")
+        # Extract knowledge_id directly from user_inputs
+        knowledge_id = self.graph_runtime_state.variable_pool.user_inputs.get("knowledge_id") if hasattr(self.graph_runtime_state.variable_pool, "user_inputs") else None
+        logger.info(f"Extracted knowledge_id from user_inputs: {knowledge_id}")
+
+        # Alternative: Extract from start node dynamically (if user_inputs fails)
+        if not knowledge_id:
+            # Find start node ID dynamically
+            start_node_id = None
+            for node_id in self.graph_runtime_state.variable_pool.variable_dictionary.keys():
+                if node_id != "sys":  # Exclude system variables
+                    start_node_id = node_id
+                    break
+            if start_node_id:
+                knowledge_id_variable = self.graph_runtime_state.variable_pool.get([start_node_id, "knowledge_id"])
+                knowledge_id = (
+                    knowledge_id_variable.value 
+                    if knowledge_id_variable and isinstance(knowledge_id_variable, StringSegment) 
+                    else None
+                )
+                logger.info(f"Extracted knowledge_id from start node ({start_node_id}): {knowledge_id}")
 
         # Assign knowledge_id to variables if provided
         if knowledge_id:
             variables["knowledge_id"] = knowledge_id
         else:
             logger.warning("No knowledge_id provided in inputs, proceeding with default behavior")
-            # Optional: Uncomment the following to fail if knowledge_id is required
-            # return NodeRunResult(
-            #     status=WorkflowNodeExecutionStatus.FAILED,
-            #     inputs=variables,
-            #     error="knowledge_id is required in inputs"
-            # )
 
         logger.info(f"Final assigned knowledge_id in _run: {knowledge_id}")
 
@@ -308,8 +314,13 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         """
         variable_mapping = {}
         variable_mapping[node_id + ".query"] = node_data.query_variable_selector
-        # Add mapping for knowledge_id to allow dynamic input from API
-        variable_mapping[node_id + ".knowledge_id"] = ["input", "knowledge_id"]
+        # Map knowledge_id to Start node's output dynamically
+        start_node_id = next((n_id for n_id in graph_config.keys() if n_id != "sys"), None)
+        if start_node_id:
+            variable_mapping[node_id + ".knowledge_id"] = [start_node_id, "knowledge_id"]
+        else:
+            variable_mapping[node_id + ".knowledge_id"] = ["start", "knowledge_id"]  # Fallback
+        logger.info(f"Variable mapping: {variable_mapping}")
         return variable_mapping
 
     def _fetch_model_config(
