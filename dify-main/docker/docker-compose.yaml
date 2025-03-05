@@ -965,3 +965,23 @@ networks:
 volumes:
   oradata:
   dify_es01_data:
+
+  #knowledge 扩展
+  manage-service:
+    build:
+      context: ./manage_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - api
+    environment:
+      - DIFY_API_URL=http://api:3000/v1
+      - DIFY_API_KEY=your-dify-api-key
+    volumes:
+      - ./manage_service/users.db:/app/users.db
+    networks:
+      - dify-network
+networks:
+  dify-network:
+    driver: bridge
