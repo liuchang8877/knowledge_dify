@@ -56,17 +56,30 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
             )
         query = variable.value
         variables = {"query": query}
+        logger.info(f"Query extracted: {query}")
 
-        # Extract knowledge_id from inputs (if provided)
+        # Extract knowledge_id from inputs (Scheme 1)
         knowledge_id_variable = self.graph_runtime_state.variable_pool.get(["input", "knowledge_id"])
         knowledge_id = (
             knowledge_id_variable.value 
             if knowledge_id_variable and isinstance(knowledge_id_variable, StringSegment) 
             else None
         )
-        logger.info(f"Extracted knowledge_id: {knowledge_id}")  # 添加调试日志
+        logger.info(f"Extracted knowledge_id from inputs: {knowledge_id}")
+
+        # Optional: Fallback to node_data.dataset_ids[0] if no knowledge_id provided
+        # Uncomment the following block if you want a fallback behavior
+        # if not knowledge_id and len(self.node_data.dataset_ids) > 0:
+        #     knowledge_id = self.node_data.dataset_ids[0]
+        #     logger.info(f"No knowledge_id in inputs, falling back to node_data.dataset_ids[0]: {knowledge_id}")
+        #     variables["knowledge_id"] = knowledge_id
+
         if knowledge_id:
             variables["knowledge_id"] = knowledge_id
+        else:
+            logger.warning("No knowledge_id provided in inputs, proceeding with default behavior")
+
+        logger.info(f"Final assigned knowledge_id in _run: {knowledge_id}")
 
         if not query:
             return NodeRunResult(
@@ -76,22 +89,22 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         # retrieve knowledge
         try:
             results = self._fetch_dataset_retriever(node_data=self.node_data, query=query, knowledge_id=knowledge_id)
-            logger.info(f"Retrieved results for knowledge_id: {knowledge_id}")  # 添加调试日志
+            logger.info(f"Retrieved results for knowledge_id: {knowledge_id}")
             outputs = {"result": results}
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.SUCCEEDED, inputs=variables, process_data=None, outputs=outputs
             )
 
         except KnowledgeRetrievalNodeError as e:
-            logger.warning("Error when running knowledge retrieval node")
+            logger.warning(f"Error when running knowledge retrieval node: {str(e)}")
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.FAILED,
                 inputs=variables,
                 error=str(e),
                 error_type=type(e).__name__,
             )
-        # Temporary handle all exceptions from DatasetRetrieval class here.
         except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.FAILED,
                 inputs=variables,
@@ -103,9 +116,10 @@ class KnowledgeRetrievalNode(BaseNode[KnowledgeRetrievalNodeData]):
         self, node_data: KnowledgeRetrievalNodeData, query: str, knowledge_id: str | None = None
     ) -> list[dict[str, Any]]:
         available_datasets = []
-        # Use dynamic knowledge_id if provided, otherwise fall back to node_data.dataset_ids
+        # Use provided knowledge_id if available, otherwise use all dataset_ids from node_data
         dataset_ids = [knowledge_id] if knowledge_id else node_data.dataset_ids
-        logger.info(f"Using dataset_ids: {dataset_ids}")  # 添加调试日志
+        logger.info(f"Using dataset_ids in _fetch_dataset_retriever: {dataset_ids}")
+
         # Subquery: Count the number of available documents for each dataset
         subquery = (
             db.session.query(Document.dataset_id, func.count(Document.id).label("available_document_count"))
