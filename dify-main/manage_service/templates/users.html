@@ -102,6 +102,17 @@
                 margin-bottom: 20px;
                 border-radius: 4px;
             }
+            .knowledge-id {
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .knowledge-id:hover {
+                overflow: visible;
+                white-space: normal;
+                word-break: break-all;
+            }
         </style>
     </head>
     <body>
@@ -138,6 +149,7 @@
                         <th>用户ID</th>
                         <th>用户名</th>
                         <th>知识库ID</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -145,7 +157,10 @@
                     <tr>
                         <td>{{ user.user_id }}</td>
                         <td>{{ user.username }}</td>
-                        <td>{{ user.knowledge_id }}</td>
+                        <td class="knowledge-id" title="{{ user.knowledge_id }}">{{ user.knowledge_id }}</td>
+                        <td>
+                            <a href="/admin/test-kb/{{ user.knowledge_id }}" target="_blank">测试知识库</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

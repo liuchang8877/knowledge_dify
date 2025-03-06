@@ -316,6 +316,17 @@ def create_template_files():
                 margin-bottom: 20px;
                 border-radius: 4px;
             }
+            .knowledge-id {
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .knowledge-id:hover {
+                overflow: visible;
+                white-space: normal;
+                word-break: break-all;
+            }
         </style>
     </head>
     <body>
@@ -352,6 +363,7 @@ def create_template_files():
                         <th>用户ID</th>
                         <th>用户名</th>
                         <th>知识库ID</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -359,7 +371,10 @@ def create_template_files():
                     <tr>
                         <td>{{ user.user_id }}</td>
                         <td>{{ user.username }}</td>
-                        <td>{{ user.knowledge_id }}</td>
+                        <td class="knowledge-id" title="{{ user.knowledge_id }}">{{ user.knowledge_id }}</td>
+                        <td>
+                            <a href="/admin/test-kb/{{ user.knowledge_id }}" target="_blank">测试知识库</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -409,12 +424,14 @@ async def admin_login_page(request: Request, error: str = None):
 
 @app.post("/admin/login")
 async def admin_login(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
+    print(f"Admin login attempt for user: {username}")
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?',
                       (username, password)).fetchone()
     conn.close()
     
     if not user:
+        print(f"Admin login failed for user: {username} - Invalid credentials")
         return templates.TemplateResponse(
             "login.html", 
             {"request": request, "error": "用户名或密码不正确"}
@@ -422,9 +439,13 @@ async def admin_login(request: Request, response: Response, username: str = Form
     
     # 创建会话
     session_id = str(uuid.uuid4())
+    knowledge_id = user["knowledge_id"]
+    print(f"Admin user {username} logged in successfully with knowledge_id: {knowledge_id}")
+    
     active_sessions[session_id] = {
         "user_id": user["user_id"],
-        "username": user["username"]
+        "username": user["username"],
+        "knowledge_id": knowledge_id
     }
     
     response = RedirectResponse(url="/admin/users", status_code=303)
@@ -504,12 +525,14 @@ async def register(user: User):
 
 @app.post("/login")
 async def login(user: User):
+    print(f"Login attempt for user: {user.username}")
     conn = get_db_connection()
     db_user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?',
                       (user.username, user.password)).fetchone()
     conn.close()
     
     if not db_user:
+        print(f"Login failed for user: {user.username} - Invalid credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -519,15 +542,68 @@ async def login(user: User):
     # 创建一个简单的token（在生产环境中应使用更安全的方法）
     token = f"{uuid.uuid4()}"
     
+    # 确保knowledge_id存在
+    knowledge_id = db_user["knowledge_id"]
+    print(f"User {user.username} logged in successfully with knowledge_id: {knowledge_id}")
+    
+    # 明确返回知识库ID
     return {
         "access_token": token,
         "token_type": "bearer",
         "user": {
             "user_id": db_user["user_id"],
             "username": db_user["username"],
-            "knowledge_id": db_user["knowledge_id"]
-        }
+            "knowledge_id": knowledge_id
+        },
+        "knowledge_id": knowledge_id  # 额外单独返回知识库ID，使其更明显
     }
+
+@app.post("/test-login")
+async def test_login(user: User):
+    """测试登录并返回知识库ID的专用端点"""
+    print(f"Test login attempt for user: {user.username}")
+    conn = get_db_connection()
+    db_user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?',
+                      (user.username, user.password)).fetchone()
+    conn.close()
+    
+    if not db_user:
+        print(f"Test login failed for user: {user.username} - Invalid credentials")
+        return JSONResponse({
+            "status": "error",
+            "message": "用户名或密码不正确"
+        }, status_code=401)
+    
+    # 确保knowledge_id存在
+    knowledge_id = db_user["knowledge_id"]
+    print(f"Test login: User {user.username} logged in successfully with knowledge_id: {knowledge_id}")
+    
+    # 测试知识库是否有效
+    try:
+        headers = {"Authorization": f"Bearer {DIFY_API_KEY}"}
+        response = requests.get(f"{DIFY_API_URL}/datasets/{knowledge_id}", headers=headers)
+        
+        kb_status = "valid" if response.status_code == 200 else "invalid"
+        kb_info = response.json() if response.status_code == 200 else None
+        
+        return {
+            "status": "success",
+            "message": f"登录成功，知识库ID: {knowledge_id}",
+            "user_id": db_user["user_id"],
+            "username": db_user["username"],
+            "knowledge_id": knowledge_id,
+            "knowledge_status": kb_status,
+            "knowledge_info": kb_info
+        }
+    except Exception as e:
+        return {
+            "status": "success",
+            "message": f"登录成功，但知识库测试失败: {str(e)}",
+            "user_id": db_user["user_id"],
+            "username": db_user["username"],
+            "knowledge_id": knowledge_id,
+            "knowledge_status": "error"
+        }
 
 @app.get("/users")
 async def get_users():
@@ -627,6 +703,39 @@ async def test_create_kb(username: str):
         "dify_api_url": DIFY_API_URL,
         "dify_api_key": DIFY_API_KEY[:5] + "..." if DIFY_API_KEY else None
     }
+
+@app.get("/admin/test-kb/{knowledge_id}")
+async def admin_test_kb(request: Request, knowledge_id: str, session_id: str = Cookie(None)):
+    """测试知识库是否有效"""
+    if not verify_session(session_id):
+        return RedirectResponse(url="/admin/login")
+    
+    try:
+        # 尝试获取知识库信息
+        headers = {"Authorization": f"Bearer {DIFY_API_KEY}"}
+        response = requests.get(f"{DIFY_API_URL}/datasets/{knowledge_id}", headers=headers)
+        
+        if response.status_code == 200:
+            kb_info = response.json()
+            return JSONResponse({
+                "status": "success",
+                "message": "知识库有效",
+                "knowledge_id": knowledge_id,
+                "knowledge_info": kb_info
+            })
+        else:
+            return JSONResponse({
+                "status": "error",
+                "message": f"知识库无效或不存在: {response.text}",
+                "knowledge_id": knowledge_id,
+                "status_code": response.status_code
+            }, status_code=400)
+    except Exception as e:
+        return JSONResponse({
+            "status": "error",
+            "message": f"测试知识库时发生错误: {str(e)}",
+            "knowledge_id": knowledge_id
+        }, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
