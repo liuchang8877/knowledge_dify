@@ -127,7 +127,7 @@ async def startup_event():
 
 # 创建模板文件
 def create_template_files():
-    # 登录页面模板 - 使用现代简洁风格
+    # 登录页面模板 - 使用现代简洁风格，添加彩色插图，其他部分保持黑白
     login_template = """
     <!DOCTYPE html>
     <html>
@@ -141,51 +141,88 @@ def create_template_files():
             body {
                 font-family: 'Inter', sans-serif;
             }
+            .illustration {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            }
         </style>
     </head>
     <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
-        <div class="max-w-md w-full space-y-8">
-            <div class="text-center">
-                <h1 class="text-4xl font-bold text-gray-900 tracking-tight">知识库管理</h1>
-                <p class="mt-3 text-lg text-gray-500">登录以管理用户和知识库</p>
+        <div class="max-w-6xl w-full flex rounded-xl shadow-lg overflow-hidden">
+            <!-- 左侧彩色插图 -->
+            <div class="hidden md:block w-1/2 illustration p-12 flex items-center justify-center">
+                <div class="text-center">
+                    <svg class="w-32 h-32 mx-auto text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h2 class="mt-6 text-3xl font-bold text-white">知识库管理系统</h2>
+                    <p class="mt-3 text-indigo-100">集中管理您的知识资源，提升信息检索效率</p>
+                </div>
             </div>
             
-            <div class="bg-white shadow rounded-xl overflow-hidden p-8 space-y-6">
-                {% if error %}
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded" role="alert">
-                    <p class="text-sm text-red-700">{{ error }}</p>
+            <!-- 右侧登录表单 - 黑白风格 -->
+            <div class="w-full md:w-1/2 bg-white p-8 md:p-12">
+                <div class="max-w-md mx-auto">
+                    <div class="text-center md:text-left">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">管理员登录</h1>
+                        <p class="mt-2 text-sm md:text-base text-gray-600">请输入您的凭据以访问管理面板</p>
+                    </div>
+                    
+                    {% if error %}
+                    <div class="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded" role="alert">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p class="ml-3 text-sm text-red-700">{{ error }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form action="/admin/login" method="post" class="mt-8 space-y-6">
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="username" name="username" required
+                                    class="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input type="password" id="password" name="password" required
+                                    class="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit" 
+                                class="group relative w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                                <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                                    <svg class="h-5 w-5 text-gray-500 group-hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
+                                </span>
+                                登录
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                {% endif %}
-                
-                <form action="/admin/login" method="post" class="space-y-6">
-                    <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
-                        <div class="mt-1">
-                            <input type="text" id="username" name="username" required
-                                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
-                        <div class="mt-1">
-                            <input type="password" id="password" name="password" required
-                                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <button type="submit" 
-                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
-                            登录
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </body>
     </html>
     """
     
-    # 用户列表页面模板 - 使用更简单的方式显示数据
+    # 用户列表页面模板 - 使用黑白风格
     users_template = """
     <!DOCTYPE html>
     <html>
@@ -210,11 +247,17 @@ def create_template_files():
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <h1 class="text-2xl font-bold text-gray-900">知识库管理系统</h1>
+                        <svg class="h-8 w-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h1 class="ml-2 text-2xl font-bold text-gray-900">知识库管理系统</h1>
                     </div>
                     <div class="flex items-center">
                         <a href="/admin/logout" 
-                           class="ml-4 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 transition duration-150">
+                           class="ml-4 flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition duration-150">
+                            <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
                             退出登录
                         </a>
                     </div>
@@ -224,23 +267,39 @@ def create_template_files():
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-900 mb-6">用户管理</h2>
-                <p class="text-lg text-gray-500 mb-8">管理系统用户和他们的知识库</p>
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <h2 class="ml-2 text-3xl font-bold text-gray-900">用户管理</h2>
+                </div>
+                <p class="mt-2 text-lg text-gray-500">管理系统用户和他们的知识库</p>
                 
                 {% if message %}
-                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded mb-6" role="alert">
-                    <p class="text-sm text-green-700">{{ message }}</p>
+                <div class="mt-4 bg-gray-100 border-l-4 border-gray-500 p-4 rounded" role="alert">
+                    <div class="flex">
+                        <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="ml-3 text-sm text-gray-700">{{ message }}</p>
+                    </div>
                 </div>
                 {% endif %}
                 
                 <!-- 标签导航 -->
-                <div class="flex space-x-2 mb-8">
+                <div class="flex space-x-2 mt-6">
                     <a href="/admin/users" 
-                       class="tab-active px-6 py-2 rounded-full text-sm font-medium transition duration-150">
+                       class="tab-active flex items-center px-6 py-2 rounded-full text-sm font-medium transition duration-150">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
                         用户列表
                     </a>
                     <button onclick="document.getElementById('addUserForm').style.display = 'block';" 
-                            class="px-6 py-2 rounded-full text-sm font-medium transition duration-150">
+                            class="flex items-center px-6 py-2 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 transition duration-150">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
                         添加用户
                     </button>
                 </div>
@@ -249,27 +308,52 @@ def create_template_files():
             <!-- 添加用户表单 -->
             <div id="addUserForm" style="display: none;" 
                  class="bg-white shadow rounded-xl overflow-hidden p-6 mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">添加新用户</h3>
+                <div class="flex items-center mb-4">
+                    <svg class="h-6 w-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    <h3 class="ml-2 text-lg font-medium text-gray-900">添加新用户</h3>
+                </div>
                 <form action="/admin/users/add" method="post" class="space-y-4">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="new-username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-                            <input type="text" id="new-username" name="username" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <div class="relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="new-username" name="username" required
+                                       class="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500">
+                            </div>
                         </div>
                         <div>
                             <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-                            <input type="password" id="new-password" name="password" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <div class="relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input type="password" id="new-password" name="password" required
+                                       class="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500">
+                            </div>
                         </div>
                     </div>
                     <div class="flex justify-end">
                         <button type="button" onclick="document.getElementById('addUserForm').style.display = 'none';"
-                                class="mr-3 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500 transition duration-150">
+                                class="mr-3 flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500 transition duration-150">
+                            <svg class="mr-2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                             取消
                         </button>
                         <button type="submit" 
-                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                                class="flex items-center px-4 py-2 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150">
+                            <svg class="mr-2 h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
                             添加用户
                         </button>
                     </div>
@@ -305,12 +389,24 @@ def create_template_files():
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ user.user_id }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ user.username }}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                            <span class="text-gray-800 font-medium">{{ user.username[0] | upper }}</span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
-                                    <div class="max-w-xs truncate" title="{{ user.knowledge_id }}">
-                                        {{ user.knowledge_id }}
+                                    <div class="flex items-center">
+                                        <svg class="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <div class="max-w-xs truncate" title="{{ user.knowledge_id }}">
+                                            {{ user.knowledge_id }}
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -319,7 +415,12 @@ def create_template_files():
                             {% if users|length == 0 %}
                             <tr>
                                 <td colspan="4" class="px-6 py-10 text-center text-sm text-gray-500">
-                                    没有用户数据
+                                    <div class="flex flex-col items-center">
+                                        <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                        <p class="mt-2">没有用户数据</p>
+                                    </div>
                                 </td>
                             </tr>
                             {% endif %}
@@ -332,7 +433,10 @@ def create_template_files():
             {% if users|length == 0 %}
             <div class="text-center mt-6">
                 <button onclick="document.getElementById('addUserForm').style.display = 'block';" 
-                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
                     添加第一个用户
                 </button>
             </div>
