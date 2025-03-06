@@ -1,2 +1,3 @@
 # knowledge_dify
 knowledge_dify
+增加一些自动化配置
