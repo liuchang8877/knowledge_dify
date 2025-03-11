@@ -932,6 +932,11 @@ async def admin_test_kb(request: Request, knowledge_id: str, session_id: str = C
             "knowledge_id": knowledge_id
         }, status_code=500)
 
+# 添加一个新的路由，处理 /admin 根路径
+@app.get("/admin")
+async def admin_root():
+    return RedirectResponse(url="/admin/login")
+
 if __name__ == "__main__":
     import uvicorn
     print(f"Starting FastAPI server on {HOST}:{PORT}")
